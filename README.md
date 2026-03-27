@@ -60,6 +60,16 @@ Key parameters in `src/extract_map.py`:
 | `dilate(9,9) x4` | Step 1 | Barrier expansion to close outline gaps |
 | `close(61,61)` | Step 1 | Morphological close to seal remaining gaps |
 
+## Example
+
+### Input
+| ![input1](input/Screenshot_260328_055959.jpg) | ![input2](input/Screenshot_260328_060006.jpg) |
+|:---:|:---:|
+
+### Output
+| ![output1](output/Screenshot_260328_055959_map.png) | ![output2](output/Screenshot_260328_060006_map.png) |
+|:---:|:---:|
+
 ## Input / Output
 
 - **Input**: Lost Ark world map screenshots (3840x2160 JPG recommended)
