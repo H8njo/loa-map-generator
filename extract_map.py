@@ -96,12 +96,23 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
             cv2.floodFill(flood_h, hm, (cw - 1, y), 0)
     alpha[flood_h > 0] = 255
 
-    # === Step 4: 노이즈 제거 ===
+    # === Step 4: 노이즈 + UI 잔재 제거 ===
     nl, la, st, _ = cv2.connectedComponentsWithStats(alpha, connectivity=8)
     max_a = max(st[i, cv2.CC_STAT_AREA] for i in range(1, nl)) if nl > 1 else 0
     clean = np.zeros_like(alpha)
+    margin = 80  # 모서리 판정 영역 (px)
     for i in range(1, nl):
-        if st[i, cv2.CC_STAT_AREA] >= max(5000, max_a * 0.05):
+        area = st[i, cv2.CC_STAT_AREA]
+        if area < max(5000, max_a * 0.05):
+            continue
+        # 모서리에만 위치한 작은 컴포넌트 = UI 잔재 (라벨, 아이콘 등)
+        cx = st[i, cv2.CC_STAT_LEFT] + st[i, cv2.CC_STAT_WIDTH] // 2
+        cy = st[i, cv2.CC_STAT_TOP] + st[i, cv2.CC_STAT_HEIGHT] // 2
+        at_corner = (
+            (cx < margin or cx > cw - margin or cy < margin or cy > ch - margin)
+            and area < max_a * 0.3
+        )
+        if not at_corner:
             clean[la == i] = 255
 
     alpha = cv2.GaussianBlur(clean, (3, 3), 0)
