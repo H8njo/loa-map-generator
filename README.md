@@ -27,17 +27,17 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
+# All images in input/ folder
+./run.sh
+
 # Single file
-python src/extract_map.py input/screenshot.jpg
+./run.sh input/screenshot.jpg
 
-# Single file with custom output path
-python src/extract_map.py input/screenshot.jpg -o output/map.png
-
-# All images in a folder
-python src/extract_map.py input/
+# Custom output path
+./run.sh input/screenshot.jpg -o output/map.png
 
 # Debug mode (saves intermediate images)
-python src/extract_map.py input/screenshot.jpg --debug
+./run.sh input/screenshot.jpg --debug
 ```
 
 ## Crop Coordinate Testing
