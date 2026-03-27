@@ -28,16 +28,16 @@ pip install -r requirements.txt
 
 ```bash
 # Single file
-python extract_map.py input/screenshot.jpg
+python src/extract_map.py input/screenshot.jpg
 
 # Single file with custom output path
-python extract_map.py input/screenshot.jpg -o output/map.png
+python src/extract_map.py input/screenshot.jpg -o output/map.png
 
 # All images in a folder
-python extract_map.py input/
+python src/extract_map.py input/
 
 # Debug mode (saves intermediate images)
-python extract_map.py input/screenshot.jpg --debug
+python src/extract_map.py input/screenshot.jpg --debug
 ```
 
 ## Crop Coordinate Testing
@@ -45,13 +45,13 @@ python extract_map.py input/screenshot.jpg --debug
 Use `test_crop.py` to find the right crop coordinates for your resolution:
 
 ```bash
-python test_crop.py input/screenshot.jpg
-python test_crop.py input/screenshot.jpg --x1 500 --y1 250 --x2 3300 --y2 1750
+python tools/test_crop.py input/screenshot.jpg
+python tools/test_crop.py input/screenshot.jpg --x1 500 --y1 250 --x2 3300 --y2 1750
 ```
 
 ## Configuration
 
-Key parameters in `extract_map.py`:
+Key parameters in `src/extract_map.py`:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|

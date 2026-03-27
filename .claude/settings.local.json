@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3 -c \"import cv2; print\\(''cv2:'', cv2.__version__\\)\")",
+      "Bash(python3 -c \"import numpy; print\\(''numpy:'', numpy.__version__\\)\")",
+      "Bash(python3 -m pip install opencv-python numpy)",
+      "Bash(python3 -m venv /Users/hoonjo/Projects/loa-map-generator/.venv)",
+      "Bash(source /Users/hoonjo/Projects/loa-map-generator/.venv/bin/activate)",
+      "Bash(python3:*)"
+    ]
+  }
+}
