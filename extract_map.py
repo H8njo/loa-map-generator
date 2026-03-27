@@ -96,6 +96,14 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
             cv2.floodFill(flood_h, hm, (cw - 1, y), 0)
     alpha[flood_h > 0] = 255
 
+    # === Step 3.5: 고정 UI 영역 강제 투명 ===
+    # 상단 전체: 지역명 텍스트 ("바람결 구릉지" 등) + 검색바/아이콘
+    alpha[:80, :] = 0
+    # 우상단 검색바/아이콘/카운터 (더 아래까지)
+    alpha[:200, cw - 700:] = 0
+    # 우하단 스택 아이콘
+    alpha[ch - 200:, cw - 300:] = 0
+
     # === Step 4: 노이즈 + UI 잔재 제거 ===
     nl, la, st, _ = cv2.connectedComponentsWithStats(alpha, connectivity=8)
     max_a = max(st[i, cv2.CC_STAT_AREA] for i in range(1, nl)) if nl > 1 else 0
