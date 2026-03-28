@@ -160,7 +160,10 @@ def main():
     if os.path.isdir(args.input):
         files = []
         for p in ["*.jpg", "*.jpeg", "*.png", "*.bmp"]:
-            files.extend(glob.glob(os.path.join(args.input, p)))
+            files.extend(
+                f for f in glob.glob(os.path.join(args.input, p))
+                if not f.endswith(".md")
+            )
         if not files:
             print(f"오류: {args.input} 폴더에 이미지가 없습니다")
             sys.exit(1)
