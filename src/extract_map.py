@@ -126,6 +126,16 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
         if st_bg[i, cv2.CC_STAT_AREA] > BG_MIN_AREA:
             alpha[la_bg == i] = 0
 
+    # === Step 4.5: 텍스트 복원 (배경 제거로 잘린 라벨 복구) ===
+    text_mask = (v > 120).astype(np.uint8) * 255
+    k_text = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41))
+    text_padded = cv2.dilate(text_mask, k_text, iterations=1)
+    alpha[text_padded > 0] = 255
+    # UI 마스킹 재적용 (텍스트 복원이 UI도 살릴 수 있으므로)
+    alpha[:80, :] = 0
+    alpha[:200, cw - 700:] = 0
+    alpha[ch - 200:, cw - 300:] = 0
+
     if debug:
         cv2.imwrite(output_path.replace(".png", "_03_after_bg.png"), alpha)
 
