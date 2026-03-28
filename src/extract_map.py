@@ -5,7 +5,9 @@
   1. 맵 창을 정적 좌표로 크롭
   2. V > 80 밝은 외곽선을 barrier로 사용
   3. 외부에서 flood fill → barrier 안쪽은 보존
-  4. 내부 구멍 채우기 + 노이즈 제거
+  4. 내부 구멍 채우기
+  5. 배경색(#25272C) 큰 덩어리 제거
+  6. 노이즈/UI 제거 + 투명 여백 트림
 
 사용법:
     python extract_map.py input/screenshot.jpg
@@ -23,6 +25,11 @@ import numpy as np
 
 # 3840x2160 해상도 기준 맵 창 좌표 (고정)
 MAP_WINDOW = {"x1": 500, "y1": 250, "x2": 3300, "y2": 1750}
+
+# 배경색 #25272C = RGB(37, 39, 44)
+BG_COLOR_RGB = (37, 39, 44)
+BG_COLOR_DIST = 20      # 색상 거리 허용 범위
+BG_MIN_AREA = 10000      # 이 면적 이상이면 배경 덩어리로 판정
 
 
 def extract_map_terrain(img_path, output_path=None, debug=False):
@@ -43,6 +50,7 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
     crop = img[y1:y2, x1:x2]
     ch, cw = crop.shape[:2]
     v = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)[:, :, 2]
+    b_ch, g_ch, r_ch = cv2.split(crop)
 
     if debug:
         cv2.imwrite(output_path.replace(".png", "_01_crop.png"), crop)
@@ -50,8 +58,8 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
     # === Step 1: 외곽선 barrier (V > 80) ===
     outline = (v > 80).astype(np.uint8) * 255
     k_d = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9))
-    outline = cv2.dilate(outline, k_d, iterations=4)
-    k_c = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (61, 61))
+    outline = cv2.dilate(outline, k_d, iterations=2)
+    k_c = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (21, 21))
     outline = cv2.morphologyEx(outline, cv2.MORPH_CLOSE, k_c)
 
     if debug:
@@ -97,23 +105,39 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
     alpha[flood_h > 0] = 255
 
     # === Step 3.5: 고정 UI 영역 강제 투명 ===
-    # 상단 전체: 지역명 텍스트 ("바람결 구릉지" 등) + 검색바/아이콘
     alpha[:80, :] = 0
-    # 우상단 검색바/아이콘/카운터 (더 아래까지)
     alpha[:200, cw - 700:] = 0
-    # 우하단 스택 아이콘
     alpha[ch - 200:, cw - 300:] = 0
 
-    # === Step 4: 노이즈 + UI 잔재 제거 ===
+    # === Step 4: 배경색(#25272C) 큰 덩어리 제거 ===
+    tr, tg, tb = BG_COLOR_RGB
+    dist = np.sqrt(
+        (r_ch.astype(float) - tr) ** 2
+        + (g_ch.astype(float) - tg) ** 2
+        + (b_ch.astype(float) - tb) ** 2
+    )
+    bg_in_alpha = cv2.bitwise_and(
+        (dist <= BG_COLOR_DIST).astype(np.uint8) * 255, alpha
+    )
+    nl_bg, la_bg, st_bg, _ = cv2.connectedComponentsWithStats(
+        bg_in_alpha, connectivity=8
+    )
+    for i in range(1, nl_bg):
+        if st_bg[i, cv2.CC_STAT_AREA] > BG_MIN_AREA:
+            alpha[la_bg == i] = 0
+
+    if debug:
+        cv2.imwrite(output_path.replace(".png", "_03_after_bg.png"), alpha)
+
+    # === Step 5: 노이즈 + UI 잔재 제거 ===
     nl, la, st, _ = cv2.connectedComponentsWithStats(alpha, connectivity=8)
     max_a = max(st[i, cv2.CC_STAT_AREA] for i in range(1, nl)) if nl > 1 else 0
     clean = np.zeros_like(alpha)
-    margin = 80  # 모서리 판정 영역 (px)
+    margin = 80
     for i in range(1, nl):
         area = st[i, cv2.CC_STAT_AREA]
         if area < max(5000, max_a * 0.05):
             continue
-        # 모서리에만 위치한 작은 컴포넌트 = UI 잔재 (라벨, 아이콘 등)
         cx = st[i, cv2.CC_STAT_LEFT] + st[i, cv2.CC_STAT_WIDTH] // 2
         cy = st[i, cv2.CC_STAT_TOP] + st[i, cv2.CC_STAT_HEIGHT] // 2
         at_corner = (
@@ -126,20 +150,22 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
     alpha = cv2.GaussianBlur(clean, (3, 3), 0)
 
     if debug:
-        cv2.imwrite(output_path.replace(".png", "_03_alpha.png"), alpha)
+        cv2.imwrite(output_path.replace(".png", "_04_alpha.png"), alpha)
         white = np.full_like(crop, 255)
         a3 = np.stack([alpha.astype(float) / 255] * 3, axis=-1)
-        comp = (crop.astype(float) * a3 + white.astype(float) * (1 - a3)).astype(np.uint8)
+        comp = (crop.astype(float) * a3 + white.astype(float) * (1 - a3)).astype(
+            np.uint8
+        )
         cv2.imwrite(output_path.replace(".png", "_white.png"), comp)
 
-    # === Step 5: 투명 여백 제거 (맵에 맞춰 크롭) ===
+    # === Step 6: 투명 여백 제거 (맵에 맞춰 크롭) ===
     rows = np.any(alpha > 0, axis=1)
     cols = np.any(alpha > 0, axis=0)
     if rows.any() and cols.any():
         y_min, y_max = np.where(rows)[0][[0, -1]]
         x_min, x_max = np.where(cols)[0][[0, -1]]
-        crop = crop[y_min:y_max + 1, x_min:x_max + 1]
-        alpha = alpha[y_min:y_max + 1, x_min:x_max + 1]
+        crop = crop[y_min : y_max + 1, x_min : x_max + 1]
+        alpha = alpha[y_min : y_max + 1, x_min : x_max + 1]
 
     b, g, r = cv2.split(crop)
     result = cv2.merge([b, g, r, alpha])
@@ -170,7 +196,8 @@ def main():
         files = []
         for p in ["*.jpg", "*.jpeg", "*.png", "*.bmp"]:
             files.extend(
-                f for f in glob.glob(os.path.join(args.input, p))
+                f
+                for f in glob.glob(os.path.join(args.input, p))
                 if not f.endswith(".md")
             )
         if not files:
