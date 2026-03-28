@@ -132,6 +132,15 @@ def extract_map_terrain(img_path, output_path=None, debug=False):
         comp = (crop.astype(float) * a3 + white.astype(float) * (1 - a3)).astype(np.uint8)
         cv2.imwrite(output_path.replace(".png", "_white.png"), comp)
 
+    # === Step 5: 투명 여백 제거 (맵에 맞춰 크롭) ===
+    rows = np.any(alpha > 0, axis=1)
+    cols = np.any(alpha > 0, axis=0)
+    if rows.any() and cols.any():
+        y_min, y_max = np.where(rows)[0][[0, -1]]
+        x_min, x_max = np.where(cols)[0][[0, -1]]
+        crop = crop[y_min:y_max + 1, x_min:x_max + 1]
+        alpha = alpha[y_min:y_max + 1, x_min:x_max + 1]
+
     b, g, r = cv2.split(crop)
     result = cv2.merge([b, g, r, alpha])
 
