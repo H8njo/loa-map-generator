@@ -63,11 +63,11 @@ Key parameters in `src/extract_map.py`:
 ## Example
 
 ### Input
-| ![input1](input/Screenshot_260328_055959.jpg) | ![input2](input/Screenshot_260328_060006.jpg) |
+| ![input1](docs/examples/Screenshot_260328_055959.jpg) | ![input2](docs/examples/Screenshot_260328_060006.jpg) |
 |:---:|:---:|
 
 ### Output
-| ![output1](output/Screenshot_260328_055959_map.png) | ![output2](output/Screenshot_260328_060006_map.png) |
+| ![output1](docs/examples/Screenshot_260328_055959_map.png) | ![output2](docs/examples/Screenshot_260328_060006_map.png) |
 |:---:|:---:|
 
 ## Input / Output
